@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "OpenAI Compatible TTS Reader",
+  "version": "1.0",
+  "description": "Reads webpage content using OpenAI compatible TTS service",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://localhost:8000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icon48.png"
+    }
+  },
+  "icons": {
+    "48": "icon48.png"
+  }
+}

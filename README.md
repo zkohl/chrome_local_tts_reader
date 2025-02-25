@@ -9,7 +9,7 @@ A sleek Chrome extension that converts webpage text to speech using a local Open
 - 🎭 Multiple voice options compatible with OpenAI voice mappings
 - ⚡ Adjustable playback speed (0.25x to 4.0x)
 - 💾 Option to save audio for download
-- ⏯️ Play/Pause/Stop controls
+- ⏯️ Play/Pause/Stop/Seek controls
 - 🎨 Clean, modern interface
 - 🔧 Configurable server URL
 - 🌐 Works with Tailscale/local network TTS servers

@@ -45,58 +45,71 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         }
       }).then(results => {
         if (results && results[0] && results[0].result) {
-          readText(results[0].result);
+          processAndReadText(results[0].result, tab.id);
         }
       });
     } else {
       // Use the selected text
-      readText(text);
+      processAndReadText(text, tab.id);
     }
   }
 });
 
-// Read text with default settings
-async function readText(text) {
-  // Get default settings
-  const settings = await chrome.storage.local.get({
-    serverUrl: 'http://localhost:8000/v1/audio/speech',
-    voice: 'af_bella',
-    speed: 1.0,
-    recordAudio: false,
-    preprocessText: true
-  });
-  
-  // Process text if enabled
-  if (settings.preprocessText) {
-    // Load the text processor script
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      files: ['textProcessor.js']
+// Process and read text with default settings
+async function processAndReadText(text, tabId) {
+  try {
+    // Get default settings
+    const settings = await chrome.storage.local.get({
+      serverUrl: 'http://localhost:8000/v1/audio/speech',
+      voice: 'af_bella',
+      speed: 1.0,
+      recordAudio: false,
+      preprocessText: true
     });
     
-    // Process the text
-    const result = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      function: (text) => {
-        return window.TextProcessor.process(text);
-      },
-      args: [text]
-    });
-    
-    if (result && result[0] && result[0].result) {
-      text = result[0].result;
+    // Process text if enabled
+    if (settings.preprocessText && tabId) {
+      try {
+        // Inject the text processor script if needed
+        await chrome.scripting.executeScript({
+          target: { tabId: tabId },
+          files: ['textProcessor.js']
+        });
+        
+        // Process the text
+        const result = await chrome.scripting.executeScript({
+          target: { tabId: tabId },
+          func: (textToProcess) => {
+            return window.TextProcessor.process(textToProcess);
+          },
+          args: [text]
+        });
+        
+        if (result && result[0] && result[0].result) {
+          text = result[0].result;
+        }
+      } catch (error) {
+        console.error('Error processing text:', error);
+        // Fall back to using the original text
+      }
     }
+    
+    // Set state to loading
+    currentPlayerState = 'loading';
+    chrome.runtime.sendMessage({ 
+      type: 'playerStateUpdate', 
+      state: 'loading' 
+    });
+    
+    // Start streaming audio
+    startStreamingAudio(text, settings);
+  } catch (error) {
+    console.error('Error in processAndReadText:', error);
+    chrome.runtime.sendMessage({ 
+      type: 'streamError', 
+      error: error.message 
+    });
   }
-  
-  // Set state to loading
-  currentPlayerState = 'loading';
-  chrome.runtime.sendMessage({ 
-    type: 'playerStateUpdate', 
-    state: 'loading' 
-  });
-  
-  // Start streaming audio
-  startStreamingAudio(text, settings);
 }
 
 // Handle messages from popup or offscreen document

@@ -113,6 +113,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'audioReady':
       // Audio is ready but not yet playing
       if (currentPlayerState === 'loading') {
+        currentPlayerState = 'ready';
         chrome.runtime.sendMessage({ 
           type: 'playerStateUpdate', 
           state: 'ready' 
@@ -122,6 +123,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       
     case 'getPlayerState':
       sendResponse({ state: currentPlayerState });
+      return true;
+      
+    case 'seek':
+      chrome.runtime.sendMessage({ 
+        type: 'seek', 
+        time: message.time 
+      }, (response) => {
+        sendResponse(response);
+      });
+      return true;
+      
+    case 'getTimeInfo':
+      chrome.runtime.sendMessage({ 
+        type: 'getTimeInfo' 
+      }, (response) => {
+        sendResponse(response);
+      });
+      return true;
+      
+    case 'timeUpdate':
+      // Forward time updates to the popup
+      chrome.runtime.sendMessage(message);
       return true;
   }
 });

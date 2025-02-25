@@ -16,7 +16,7 @@
     .control-panel {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       background-color: #16213e;
       padding: 10px;
       border-radius: 8px;
@@ -73,6 +73,51 @@
 
     @keyframes spin {
       to { transform: rotate(360deg); }
+    }
+
+    .seek-container {
+      margin-bottom: 15px;
+      background-color: #16213e;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .seek-bar-wrapper {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+
+    #seekBar {
+      flex-grow: 1;
+      height: 5px;
+      -webkit-appearance: none;
+      background: #0f3460;
+      border-radius: 5px;
+      outline: none;
+      margin: 0 10px;
+    }
+
+    #seekBar::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #e94560;
+      cursor: pointer;
+    }
+
+    #seekBar:disabled::-webkit-slider-thumb {
+      background: #666;
+      cursor: not-allowed;
+    }
+
+    .time-display {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #aaa;
     }
 
     .settings-panel {
@@ -188,7 +233,7 @@
     <button class="btn" id="pauseBtn" title="Pause" disabled>
       <i class="fas fa-pause"></i>
     </button>
-    <button class="btn" id="stopBtn" title="Stop" disabled>
+    <button class="btn" id="stopBtn" title="Stop">
       <i class="fas fa-stop"></i>
     </button>
     <button class="btn" id="downloadBtn" title="Download" disabled>
@@ -197,6 +242,16 @@
     
     <div id="loadingIndicator">
       <div class="spinner"></div>
+    </div>
+  </div>
+
+  <div class="seek-container">
+    <div class="seek-bar-wrapper">
+      <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1" disabled>
+    </div>
+    <div class="time-display">
+      <span id="currentTime">0:00</span>
+      <span id="duration">0:00</span>
     </div>
   </div>
 

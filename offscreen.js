@@ -107,6 +107,17 @@ function playAudioUrl(audioUrl) {
       chrome.runtime.sendMessage({ type: 'streamComplete' });
     };
     
+    // Add timeupdate event for seeking
+    audioElement.ontimeupdate = () => {
+      chrome.runtime.sendMessage({ 
+        type: 'timeUpdate', 
+        timeInfo: {
+          currentTime: audioElement.currentTime,
+          duration: audioElement.duration
+        }
+      });
+    };
+    
     // Start playing
     audioElement.play().catch(err => {
       console.error('Play error:', err);
@@ -131,6 +142,27 @@ function getPlayerState() {
     return audioElement.currentTime > 0 && audioElement.currentTime < audioElement.duration ? 'paused' : 'stopped';
   }
   return 'playing';
+}
+
+// Get current time and duration
+function getTimeInfo() {
+  if (!audioElement) return null;
+  return {
+    currentTime: audioElement.currentTime,
+    duration: audioElement.duration
+  };
+}
+
+// Seek to a specific time
+function seekTo(time) {
+  if (!audioElement) return false;
+  try {
+    audioElement.currentTime = time;
+    return true;
+  } catch (error) {
+    console.error('Error seeking:', error);
+    return false;
+  }
 }
 
 // Handle messages from the background script
@@ -164,8 +196,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       break;
       
+    case 'seek':
+      const success = seekTo(message.time);
+      sendResponse({ success });
+      return true;
+      
     case 'getState':
       sendResponse({ state: getPlayerState() });
+      return true;
+      
+    case 'getTimeInfo':
+      sendResponse({ timeInfo: getTimeInfo() });
       return true;
   }
 });

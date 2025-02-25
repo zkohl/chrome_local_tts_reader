@@ -53,10 +53,29 @@ class AudioPlayer {
       }
     }
   
+    async seek(time) {
+      if (this.isInitialized) {
+        return new Promise((resolve) => {
+          chrome.runtime.sendMessage({ type: 'seek', time: time }, (response) => {
+            resolve(response && response.success);
+          });
+        });
+      }
+      return false;
+    }
+  
     async getState() {
       return new Promise((resolve) => {
         chrome.runtime.sendMessage({ type: 'getPlayerState' }, (response) => {
           resolve(response.state || 'stopped');
+        });
+      });
+    }
+  
+    async getTimeInfo() {
+      return new Promise((resolve) => {
+        chrome.runtime.sendMessage({ type: 'getTimeInfo' }, (response) => {
+          resolve(response.timeInfo || null);
         });
       });
     }

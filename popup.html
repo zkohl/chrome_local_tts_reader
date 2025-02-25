@@ -288,6 +288,14 @@
       <div class="helper-text">Audio will be available to download after playback completes or when stopped.</div>
     </div>
 
+    <div class="setting-group checkbox-group">
+      <label class="checkbox-label">
+        <input type="checkbox" id="preprocessText" checked>
+        Pre-process text for TTS
+      </label>
+      <div class="helper-text">Removes markdown, cleans up URLs, and improves text for better speech output.</div>
+    </div>
+
     <div class="setting-group">
       <label for="serverUrl">Server URL</label>
       <input type="text" id="serverUrl">
@@ -298,6 +306,7 @@
 
   <script src="audioPlayer.js"></script>
   <script src="constants.js"></script>
+  <script src="textProcessor.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

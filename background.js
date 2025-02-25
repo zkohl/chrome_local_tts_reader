@@ -62,8 +62,31 @@ async function readText(text) {
     serverUrl: 'http://localhost:8000/v1/audio/speech',
     voice: 'af_bella',
     speed: 1.0,
-    recordAudio: false
+    recordAudio: false,
+    preprocessText: true
   });
+  
+  // Process text if enabled
+  if (settings.preprocessText) {
+    // Load the text processor script
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ['textProcessor.js']
+    });
+    
+    // Process the text
+    const result = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: (text) => {
+        return window.TextProcessor.process(text);
+      },
+      args: [text]
+    });
+    
+    if (result && result[0] && result[0].result) {
+      text = result[0].result;
+    }
+  }
   
   // Set state to loading
   currentPlayerState = 'loading';

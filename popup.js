@@ -71,7 +71,8 @@ function getSettings() {
     serverUrl: document.getElementById('serverUrl').value,
     voice: document.getElementById('voice').value,
     speed: document.getElementById('speed').value,
-    recordAudio: document.getElementById('recordAudio').checked
+    recordAudio: document.getElementById('recordAudio').checked,
+    preprocessText: document.getElementById('preprocessText').checked
   };
 }
 
@@ -135,6 +136,14 @@ function startSeekBarUpdates() {
   return updateInterval;
 }
 
+// Process text based on settings
+function processText(text, settings) {
+  if (settings.preprocessText) {
+    return TextProcessor.process(text);
+  }
+  return text;
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
   // Initialize audio player
   audioPlayer = new AudioPlayer();
@@ -145,12 +154,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     serverUrl: DEFAULT_SETTINGS.serverUrl,
     voice: DEFAULT_SETTINGS.voice,
     speed: DEFAULT_SETTINGS.speed,
-    recordAudio: DEFAULT_SETTINGS.recordAudio
+    recordAudio: DEFAULT_SETTINGS.recordAudio,
+    preprocessText: DEFAULT_SETTINGS.preprocessText
   }, function(result) {
     document.getElementById('serverUrl').value = result.serverUrl;
     document.getElementById('voice').value = result.voice;
     document.getElementById('speed').value = result.speed;
     document.getElementById('recordAudio').checked = result.recordAudio;
+    document.getElementById('preprocessText').checked = result.preprocessText;
     document.querySelector('.speed-value').textContent = `${result.speed}x`;
   });
   
@@ -208,8 +219,11 @@ document.addEventListener('DOMContentLoaded', async function() {
           },
         });
 
-        const text = result[0].result;
+        let text = result[0].result;
         const settings = getSettings();
+        
+        // Process text if enabled
+        text = processText(text, settings);
         
         await saveSettings();
         updateControlButtons('loading');
@@ -256,7 +270,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   });
   
   // Save settings
-  ['serverUrl', 'voice', 'speed', 'recordAudio'].forEach(id => {
+  ['serverUrl', 'voice', 'speed', 'recordAudio', 'preprocessText'].forEach(id => {
     document.getElementById(id).addEventListener('change', saveSettings);
   });
   

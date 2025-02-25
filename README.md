@@ -2,7 +2,6 @@
 
 A sleek Chrome extension that converts webpage text to speech using a local OpenAI-compatible TTS server. Features include voice selection, speed control, and the ability to save audio files.
 
-![Local TTS Reader Screenshot](screenshot.png)
 
 ## Features
 
@@ -18,9 +17,9 @@ A sleek Chrome extension that converts webpage text to speech using a local Open
 ## Installation
 
 1. Clone this repository:
-\\```bash
+```bash
 git clone https://github.com/phildougherty/local_tts_reader.git
-\\```
+```
 
 2. Load the extension in Chrome:
    - Open Chrome and navigate to `chrome://extensions/`

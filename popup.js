@@ -24,7 +24,7 @@ function updateControlButtons(state) {
       pauseBtn.disabled = true;
       stopBtn.disabled = true;
       downloadBtn.disabled = true;
-      loadingIndicator.style.display = 'block';
+      loadingIndicator.style.display = 'flex';
       break;
     case 'ready':
       playBtn.disabled = false;

@@ -22,6 +22,60 @@ async function setupOffscreenDocument() {
   });
 }
 
+// Set up context menu items
+function setupContextMenu() {
+  chrome.contextMenus.create({
+    id: "readAloud",
+    title: "Read Aloud",
+    contexts: ["selection", "page"]
+  });
+}
+
+// Handle context menu clicks
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "readAloud") {
+    let text = info.selectionText || "";
+    
+    if (!text) {
+      // If no text is selected, get the page content
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: () => {
+          return document.body.innerText;
+        }
+      }).then(results => {
+        if (results && results[0] && results[0].result) {
+          readText(results[0].result);
+        }
+      });
+    } else {
+      // Use the selected text
+      readText(text);
+    }
+  }
+});
+
+// Read text with default settings
+async function readText(text) {
+  // Get default settings
+  const settings = await chrome.storage.local.get({
+    serverUrl: 'http://localhost:8000/v1/audio/speech',
+    voice: 'af_bella',
+    speed: 1.0,
+    recordAudio: false
+  });
+  
+  // Set state to loading
+  currentPlayerState = 'loading';
+  chrome.runtime.sendMessage({ 
+    type: 'playerStateUpdate', 
+    state: 'loading' 
+  });
+  
+  // Start streaming audio
+  startStreamingAudio(text, settings);
+}
+
 // Handle messages from popup or offscreen document
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.type) {
@@ -124,3 +178,8 @@ async function startStreamingAudio(text, settings) {
     });
   }
 }
+
+// Initialize context menu when extension is installed or updated
+chrome.runtime.onInstalled.addListener(() => {
+  setupContextMenu();
+});

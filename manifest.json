@@ -7,7 +7,8 @@
     "activeTab",
     "storage",
     "scripting",
-    "offscreen"
+    "offscreen",
+    "contextMenus"
   ],
   "host_permissions": [
     "http://localhost:8000/*",

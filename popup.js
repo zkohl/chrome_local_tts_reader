@@ -67,9 +67,14 @@ function updateControlButtons(state) {
 }
 
 function getSettings() {
+  const useCustomVoice = document.getElementById('useCustomVoice').checked;
+  const voice = useCustomVoice ? 
+    document.getElementById('customVoice').value : 
+    document.getElementById('voice').value;
+  
   return {
     serverUrl: document.getElementById('serverUrl').value,
-    voice: document.getElementById('voice').value,
+    voice: voice,
     speed: document.getElementById('speed').value,
     recordAudio: document.getElementById('recordAudio').checked,
     preprocessText: document.getElementById('preprocessText').checked
@@ -78,6 +83,13 @@ function getSettings() {
 
 async function saveSettings() {
   const settings = getSettings();
+  const useCustomVoice = document.getElementById('useCustomVoice').checked;
+  const customVoice = document.getElementById('customVoice').value;
+  
+  // Add voice mode and custom voice to settings
+  settings.voiceMode = useCustomVoice ? 'custom' : 'preset';
+  settings.customVoice = customVoice;
+  
   await chrome.storage.local.set(settings);
   updateStatus('Settings saved!', false);
 }
@@ -144,6 +156,21 @@ function processText(text, settings) {
   return text;
 }
 
+// Toggle between preset and custom voice sections
+function toggleVoiceSection() {
+  const useCustomVoice = document.getElementById('useCustomVoice').checked;
+  const presetSection = document.getElementById('presetVoiceSection');
+  const customSection = document.getElementById('customVoiceSection');
+  
+  if (useCustomVoice) {
+    presetSection.style.display = 'none';
+    customSection.style.display = 'block';
+  } else {
+    presetSection.style.display = 'block';
+    customSection.style.display = 'none';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
   // Initialize audio player
   audioPlayer = new AudioPlayer();
@@ -155,7 +182,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     voice: DEFAULT_SETTINGS.voice,
     speed: DEFAULT_SETTINGS.speed,
     recordAudio: DEFAULT_SETTINGS.recordAudio,
-    preprocessText: DEFAULT_SETTINGS.preprocessText
+    preprocessText: DEFAULT_SETTINGS.preprocessText,
+    voiceMode: 'preset',
+    customVoice: ''
   }, function(result) {
     document.getElementById('serverUrl').value = result.serverUrl;
     document.getElementById('voice').value = result.voice;
@@ -163,6 +192,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('recordAudio').checked = result.recordAudio;
     document.getElementById('preprocessText').checked = result.preprocessText;
     document.querySelector('.speed-value').textContent = `${result.speed}x`;
+    
+    // Set voice mode
+    const isCustomVoice = result.voiceMode === 'custom' || 
+      (result.customVoice && result.customVoice.trim() !== '');
+    
+    if (isCustomVoice) {
+      document.getElementById('useCustomVoice').checked = true;
+      document.getElementById('customVoice').value = result.customVoice || '';
+      toggleVoiceSection();
+    } else {
+      document.getElementById('usePresetVoice').checked = true;
+    }
   });
   
   // Sync player state
@@ -194,6 +235,21 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Speed slider
   document.getElementById('speed').addEventListener('input', function(e) {
     document.querySelector('.speed-value').textContent = `${e.target.value}x`;
+  });
+  
+  // Voice mode radio buttons
+  document.getElementById('usePresetVoice').addEventListener('change', function() {
+    if (this.checked) {
+      toggleVoiceSection();
+      saveSettings();
+    }
+  });
+  
+  document.getElementById('useCustomVoice').addEventListener('change', function() {
+    if (this.checked) {
+      toggleVoiceSection();
+      saveSettings();
+    }
   });
   
   // Play button
@@ -270,8 +326,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   });
   
   // Save settings
-  ['serverUrl', 'voice', 'speed', 'recordAudio', 'preprocessText'].forEach(id => {
-    document.getElementById(id).addEventListener('change', saveSettings);
+  ['serverUrl', 'voice', 'speed', 'recordAudio', 'preprocessText', 'customVoice'].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.addEventListener('change', saveSettings);
+    }
   });
   
   // Listen for messages from background script

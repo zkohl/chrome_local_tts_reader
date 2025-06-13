@@ -257,18 +257,36 @@
 
   <div class="settings-panel">
     <div class="setting-group">
-      <label for="voice">Voice</label>
-      <select id="voice">
-        <option value="am_adam">Adam (Alloy)</option>
-        <option value="af_nicole">Nicole (Ash)</option>
-        <option value="bf_emma">Emma (Coral)</option>
-        <option value="af_bella">Bella (Echo)</option>
-        <option value="af_sarah">Sarah (Fable)</option>
-        <option value="bm_george">George (Onyx)</option>
-        <option value="bf_isabella">Isabella (Nova)</option>
-        <option value="am_michael">Michael (Sage)</option>
-        <option value="af_sky">Sky (Shimmer)</option>
-      </select>
+      <label for="voiceMode">Voice Selection</label>
+      <div class="checkbox-group" style="margin-bottom: 10px;">
+        <label class="checkbox-label">
+          <input type="radio" name="voiceMode" id="usePresetVoice" value="preset" checked>
+          Use Preset Voice
+        </label>
+        <label class="checkbox-label">
+          <input type="radio" name="voiceMode" id="useCustomVoice" value="custom">
+          Use Custom Voice
+        </label>
+      </div>
+      
+      <div id="presetVoiceSection">
+        <select id="voice">
+          <option value="am_adam">Adam (Alloy)</option>
+          <option value="af_nicole">Nicole (Ash)</option>
+          <option value="bf_emma">Emma (Coral)</option>
+          <option value="af_bella">Bella (Echo)</option>
+          <option value="af_sarah">Sarah (Fable)</option>
+          <option value="bm_george">George (Onyx)</option>
+          <option value="bf_isabella">Isabella (Nova)</option>
+          <option value="am_michael">Michael (Sage)</option>
+          <option value="af_sky">Sky (Shimmer)</option>
+        </select>
+      </div>
+      
+      <div id="customVoiceSection" style="display: none;">
+        <input type="text" id="customVoice" placeholder="e.g., af_heart(1)+af_aoede(.75)">
+        <div class="helper-text">Enter custom voice string. Kokoro supports mixing voices with weights like: af_heart(1)+af_aoede(.75)</div>
+      </div>
     </div>
 
     <div class="setting-group">

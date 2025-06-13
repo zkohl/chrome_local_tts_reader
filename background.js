@@ -58,14 +58,32 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 // Process and read text with default settings
 async function processAndReadText(text, tabId) {
   try {
-    // Get default settings
-    const settings = await chrome.storage.local.get({
+    // Get default settings (same as popup.js)
+    const savedSettings = await chrome.storage.local.get({
       serverUrl: 'http://localhost:8000/v1/audio/speech',
       voice: 'af_bella',
       speed: 1.0,
       recordAudio: false,
-      preprocessText: true
+      preprocessText: true,
+      voiceMode: 'preset',
+      customVoice: ''
     });
+    
+    // Determine the actual voice to use based on voice mode
+    const customVoiceValid = savedSettings.customVoice && 
+      typeof savedSettings.customVoice === 'string' && 
+      savedSettings.customVoice.trim().length > 0;
+
+    const useCustomVoice = savedSettings.voiceMode === 'custom' && customVoiceValid;
+
+    if (savedSettings.voiceMode === 'custom' && !customVoiceValid) {
+      throw new Error('Custom voice mode selected but no valid custom voice provided');
+    }
+
+    const settings = {
+      ...savedSettings,
+      voice: useCustomVoice ? savedSettings.customVoice.trim() : savedSettings.voice
+    };
     
     // Process text if enabled
     if (settings.preprocessText && tabId) {

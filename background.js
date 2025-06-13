@@ -131,6 +131,15 @@ async function processAndReadText(text, tabId) {
     startStreamingAudio(text, settings);
   } catch (error) {
     console.error('Error in processAndReadText:', error);
+    
+    // Reset state to stopped on any error
+    currentPlayerState = 'stopped';
+    
+    chrome.runtime.sendMessage({ 
+      type: 'playerStateUpdate', 
+      state: 'stopped' 
+    });
+    
     chrome.runtime.sendMessage({ 
       type: 'streamError', 
       error: error.message 

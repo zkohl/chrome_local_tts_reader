@@ -7,6 +7,9 @@ This repo was forked from https://github.com/phildougherty/local_tts_reader, and
 1. Added support for custom voice mixing (e.g. `af_heart(1)+af_aoede(1)`)
 1. Reliability improvements (e.g. starting new speech when already speaking)
 
+### Suggested TTS setup:
+For local hosting, Kokoro via docker compose https://github.com/remsky/Kokoro-FastAPI. Ideally using NVIDIA GPU, but also can work on Mac with more initial latency in audio generation.
+
 # Original Documentation
 
 A sleek Chrome extension that converts webpage text to speech using a local OpenAI-compatible TTS server. Features include voice selection, speed control, and the ability to save audio files.

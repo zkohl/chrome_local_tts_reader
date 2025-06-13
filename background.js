@@ -88,11 +88,19 @@ async function processAndReadText(text, tabId) {
     // Process text if enabled
     if (settings.preprocessText && tabId) {
       try {
-        // Inject the text processor script if needed
-        await chrome.scripting.executeScript({
+        // Check if TextProcessor already exists, if not inject it
+        const checkResult = await chrome.scripting.executeScript({
           target: { tabId: tabId },
-          files: ['textProcessor.js']
+          func: () => typeof window.TextProcessor !== 'undefined'
         });
+        
+        if (!checkResult[0].result) {
+          // Inject the text processor script only if it doesn't exist
+          await chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            files: ['textProcessor.js']
+          });
+        }
         
         // Process the text
         const result = await chrome.scripting.executeScript({

@@ -261,10 +261,20 @@ async function startStreamingAudio(text, settings) {
 
     // Get the audio data as a blob
     const audioBlob = await response.blob();
+    if (audioBlob.size === 0) {
+      throw new Error('Received empty audio data from server');
+    }
+
     const mimeType = audioBlob.type || 'audio/mpeg';
+    if (!mimeType.startsWith('audio/')) {
+      throw new Error(`Invalid audio format received: ${mimeType}`);
+    }
     
     // Convert blob to array buffer to send to offscreen document
     const arrayBuffer = await audioBlob.arrayBuffer();
+    if (arrayBuffer.byteLength === 0) {
+      throw new Error('Audio data is empty');
+    }
     
     // Send the audio data to the offscreen document
     chrome.runtime.sendMessage({ 

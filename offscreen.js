@@ -9,16 +9,7 @@ function initAudio() {
   if (!audioContext) {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
   }
-  
-  if (!audioElement) {
-    audioElement = document.getElementById('audioElement');
-    if (!audioElement) {
-      audioElement = document.createElement('audio');
-      audioElement.id = 'audioElement';
-      audioElement.controls = true; // For debugging
-      document.body.appendChild(audioElement);
-    }
-  }
+  // Audio element will be created fresh for each audio session
 }
 
 // Process audio data received from background script
@@ -40,6 +31,8 @@ function processAudioData(audioDataArray, mimeType, isRecording) {
       chrome.runtime.sendMessage({ 
         type: 'recordingComplete', 
         audioUrl: audioUrl
+      }).catch(() => {
+        // Ignore connection errors
       });
     }
     
@@ -47,12 +40,16 @@ function processAudioData(audioDataArray, mimeType, isRecording) {
     playAudioUrl(audioUrl);
     
     // Notify that audio is ready to play
-    chrome.runtime.sendMessage({ type: 'audioReady' });
+    chrome.runtime.sendMessage({ type: 'audioReady' }).catch(() => {
+      // Ignore connection errors
+    });
   } catch (error) {
     console.error('Error processing audio data:', error);
     chrome.runtime.sendMessage({ 
       type: 'streamError', 
       error: error.message 
+    }).catch(() => {
+      // Ignore connection errors
     });
   }
 }
@@ -61,6 +58,33 @@ function processAudioData(audioDataArray, mimeType, isRecording) {
 function playAudioUrl(audioUrl) {
   try {
     console.log('Playing audio URL:', audioUrl);
+    
+    // Stop current audio if playing
+    if (audioElement && !audioElement.paused) {
+      audioElement.pause();
+      audioElement.currentTime = 0;
+    }
+    
+    // Disconnect existing audio source if it exists
+    if (audioSource) {
+      try {
+        audioSource.disconnect();
+      } catch (e) {
+        // Ignore errors if already disconnected
+      }
+      audioSource = null;
+    }
+    
+    // Remove old audio element to avoid MediaElementSource reuse issues
+    if (audioElement) {
+      audioElement.remove();
+    }
+    
+    // Create a fresh audio element for each new audio
+    audioElement = document.createElement('audio');
+    audioElement.id = 'audioElement';
+    audioElement.controls = true; // For debugging
+    document.body.appendChild(audioElement);
     
     // Reset connection flag
     hasSourceConnected = false;
@@ -72,39 +96,40 @@ function playAudioUrl(audioUrl) {
     audioElement.onplay = () => {
       isPlaying = true;
       
-      // Connect to audio context only once
+      // Connect to audio context only once per audio element
       if (!hasSourceConnected) {
         try {
-          // Disconnect previous source if it exists
-          if (audioSource) {
-            try {
-              audioSource.disconnect();
-            } catch (e) {
-              // Ignore errors if already disconnected
-            }
-          }
-          
           // Create and connect new source
           audioSource = audioContext.createMediaElementSource(audioElement);
           audioSource.connect(audioContext.destination);
           hasSourceConnected = true;
         } catch (e) {
           console.error('Error connecting audio source:', e);
+          // If this fails, it might be because the element already has a source
+          // Try to continue without the web audio API
         }
       }
       
-      chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'playing' });
+      chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'playing' }).catch(() => {
+        // Ignore connection errors
+      });
     };
     
     audioElement.onpause = () => {
       isPlaying = false;
-      chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'paused' });
+      chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'paused' }).catch(() => {
+        // Ignore connection errors
+      });
     };
     
     audioElement.onended = () => {
       isPlaying = false;
-      chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'stopped' });
-      chrome.runtime.sendMessage({ type: 'streamComplete' });
+      chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'stopped' }).catch(() => {
+        // Ignore connection errors
+      });
+      chrome.runtime.sendMessage({ type: 'streamComplete' }).catch(() => {
+        // Ignore connection errors
+      });
     };
     
     // Add timeupdate event for seeking
@@ -115,6 +140,8 @@ function playAudioUrl(audioUrl) {
           currentTime: audioElement.currentTime,
           duration: audioElement.duration
         }
+      }).catch(() => {
+        // Ignore connection errors
       });
     };
     
@@ -124,6 +151,8 @@ function playAudioUrl(audioUrl) {
       chrome.runtime.sendMessage({ 
         type: 'streamError', 
         error: err.message 
+      }).catch(() => {
+        // Ignore connection errors
       });
     });
   } catch (error) {
@@ -131,6 +160,8 @@ function playAudioUrl(audioUrl) {
     chrome.runtime.sendMessage({ 
       type: 'streamError', 
       error: error.message 
+    }).catch(() => {
+      // Ignore connection errors
     });
   }
 }
@@ -192,7 +223,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (audioElement) {
         audioElement.pause();
         audioElement.currentTime = 0;
-        chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'stopped' });
+        chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'stopped' }).catch(() => {
+          // Ignore connection errors
+        });
       }
       break;
       
@@ -215,13 +248,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Offscreen document loaded');
   
-  // Create audio element
-  audioElement = document.createElement('audio');
-  audioElement.id = 'audioElement';
-  audioElement.controls = true; // For debugging
-  document.body.appendChild(audioElement);
-  
-  // Initialize audio context
+  // Initialize audio context only
   initAudio();
   
   console.log('Offscreen document initialized');

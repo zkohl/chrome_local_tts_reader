@@ -1,4 +1,13 @@
 # Local TTS Reader - Chrome Extension
+This repo was forked from https://github.com/phildougherty/local_tts_reader, and includes the following changes:
+1. Added keyboard shortcuts
+   - Read aloud: (Mac: Opt+Shift+R, Win: Alt+Shift+R)
+   - Stop playback: (Mac: Opt+Shift+S, Win: Alt+Shift+S)
+1. Changed theme to be dark, sleek, and modern
+1. Added support for custom voice mixing (e.g. `af_heart(1)+af_aoede(1)`)
+1. Reliability improvements (e.g. starting new speech when already speaking)
+
+# Original Documentation
 
 A sleek Chrome extension that converts webpage text to speech using a local OpenAI-compatible TTS server. Features include voice selection, speed control, and the ability to save audio files.
 

@@ -24,7 +24,24 @@
   "background": {
     "service_worker": "background.js"
   },
+  "commands": {
+    "read-aloud": {
+      "suggested_key": {
+        "default": "Alt+Shift+R",
+        "mac": "Alt+Shift+R"
+      },
+      "description": "Read selected text or page aloud"
+    },
+    "stop-audio": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "Stop audio playback"
+    }
+  },
   "icons": {
-    "48": "icon48.png"
+    "48": "icon48.png",
+    "128": "icon128.png"
   }
 }

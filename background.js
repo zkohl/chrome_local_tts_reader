@@ -58,6 +58,13 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 // Process and read text with default settings
 async function processAndReadText(text, tabId) {
   try {
+    // If already processing or playing, stop current audio first
+    if (currentPlayerState === 'loading' || currentPlayerState === 'playing') {
+      chrome.runtime.sendMessage({ type: 'stop' });
+      currentPlayerState = 'stopped';
+      // Give a brief moment for the stop to process
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
     // Get default settings (same as popup.js)
     const savedSettings = await chrome.storage.local.get({
       serverUrl: 'http://localhost:8000/v1/audio/speech',

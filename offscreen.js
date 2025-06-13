@@ -9,16 +9,7 @@ function initAudio() {
   if (!audioContext) {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
   }
-  
-  if (!audioElement) {
-    audioElement = document.getElementById('audioElement');
-    if (!audioElement) {
-      audioElement = document.createElement('audio');
-      audioElement.id = 'audioElement';
-      audioElement.controls = true; // For debugging
-      document.body.appendChild(audioElement);
-    }
-  }
+  // Audio element will be created fresh for each audio session
 }
 
 // Process audio data received from background script
@@ -68,6 +59,33 @@ function playAudioUrl(audioUrl) {
   try {
     console.log('Playing audio URL:', audioUrl);
     
+    // Stop current audio if playing
+    if (audioElement && !audioElement.paused) {
+      audioElement.pause();
+      audioElement.currentTime = 0;
+    }
+    
+    // Disconnect existing audio source if it exists
+    if (audioSource) {
+      try {
+        audioSource.disconnect();
+      } catch (e) {
+        // Ignore errors if already disconnected
+      }
+      audioSource = null;
+    }
+    
+    // Remove old audio element to avoid MediaElementSource reuse issues
+    if (audioElement) {
+      audioElement.remove();
+    }
+    
+    // Create a fresh audio element for each new audio
+    audioElement = document.createElement('audio');
+    audioElement.id = 'audioElement';
+    audioElement.controls = true; // For debugging
+    document.body.appendChild(audioElement);
+    
     // Reset connection flag
     hasSourceConnected = false;
     
@@ -78,24 +96,17 @@ function playAudioUrl(audioUrl) {
     audioElement.onplay = () => {
       isPlaying = true;
       
-      // Connect to audio context only once
+      // Connect to audio context only once per audio element
       if (!hasSourceConnected) {
         try {
-          // Disconnect previous source if it exists
-          if (audioSource) {
-            try {
-              audioSource.disconnect();
-            } catch (e) {
-              // Ignore errors if already disconnected
-            }
-          }
-          
           // Create and connect new source
           audioSource = audioContext.createMediaElementSource(audioElement);
           audioSource.connect(audioContext.destination);
           hasSourceConnected = true;
         } catch (e) {
           console.error('Error connecting audio source:', e);
+          // If this fails, it might be because the element already has a source
+          // Try to continue without the web audio API
         }
       }
       
@@ -237,13 +248,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Offscreen document loaded');
   
-  // Create audio element
-  audioElement = document.createElement('audio');
-  audioElement.id = 'audioElement';
-  audioElement.controls = true; // For debugging
-  document.body.appendChild(audioElement);
-  
-  // Initialize audio context
+  // Initialize audio context only
   initAudio();
   
   console.log('Offscreen document initialized');

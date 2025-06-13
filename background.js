@@ -125,6 +125,8 @@ async function processAndReadText(text, tabId) {
     chrome.runtime.sendMessage({ 
       type: 'playerStateUpdate', 
       state: 'loading' 
+    }).catch(() => {
+      // Ignore connection errors when popup is not open
     });
     
     // Start streaming audio
@@ -138,11 +140,15 @@ async function processAndReadText(text, tabId) {
     chrome.runtime.sendMessage({ 
       type: 'playerStateUpdate', 
       state: 'stopped' 
+    }).catch(() => {
+      // Ignore connection errors when popup is not open
     });
     
     chrome.runtime.sendMessage({ 
       type: 'streamError', 
       error: error.message 
+    }).catch(() => {
+      // Ignore connection errors when popup is not open
     });
   }
 }
@@ -161,6 +167,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       chrome.runtime.sendMessage({ 
         type: 'playerStateUpdate', 
         state: 'loading' 
+      }).catch(() => {
+        // Ignore connection errors when popup is not open
       });
       startStreamingAudio(message.text, message.settings);
       sendResponse({ success: true });
@@ -178,6 +186,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       chrome.runtime.sendMessage({ 
         type: 'playerStateUpdate', 
         state: message.state 
+      }).catch(() => {
+        // Ignore connection errors when popup is not open
       });
       return true;
       
@@ -188,6 +198,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.runtime.sendMessage({ 
           type: 'playerStateUpdate', 
           state: 'ready' 
+        }).catch(() => {
+          // Ignore connection errors when popup is not open
         });
       }
       return true;
@@ -215,7 +227,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       
     case 'timeUpdate':
       // Forward time updates to the popup
-      chrome.runtime.sendMessage(message);
+      chrome.runtime.sendMessage(message).catch(() => {
+        // Ignore connection errors when popup is not open
+      });
       return true;
   }
 });
@@ -288,6 +302,8 @@ async function startStreamingAudio(text, settings) {
     chrome.runtime.sendMessage({ 
       type: 'streamError', 
       error: error.message 
+    }).catch(() => {
+      // Ignore connection errors when popup is not open
     });
     
     // Update state to stopped on error
@@ -295,6 +311,8 @@ async function startStreamingAudio(text, settings) {
     chrome.runtime.sendMessage({ 
       type: 'playerStateUpdate', 
       state: 'stopped' 
+    }).catch(() => {
+      // Ignore connection errors when popup is not open
     });
   }
 }

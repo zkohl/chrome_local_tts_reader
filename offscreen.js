@@ -40,6 +40,8 @@ function processAudioData(audioDataArray, mimeType, isRecording) {
       chrome.runtime.sendMessage({ 
         type: 'recordingComplete', 
         audioUrl: audioUrl
+      }).catch(() => {
+        // Ignore connection errors
       });
     }
     
@@ -47,12 +49,16 @@ function processAudioData(audioDataArray, mimeType, isRecording) {
     playAudioUrl(audioUrl);
     
     // Notify that audio is ready to play
-    chrome.runtime.sendMessage({ type: 'audioReady' });
+    chrome.runtime.sendMessage({ type: 'audioReady' }).catch(() => {
+      // Ignore connection errors
+    });
   } catch (error) {
     console.error('Error processing audio data:', error);
     chrome.runtime.sendMessage({ 
       type: 'streamError', 
       error: error.message 
+    }).catch(() => {
+      // Ignore connection errors
     });
   }
 }
@@ -93,18 +99,26 @@ function playAudioUrl(audioUrl) {
         }
       }
       
-      chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'playing' });
+      chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'playing' }).catch(() => {
+        // Ignore connection errors
+      });
     };
     
     audioElement.onpause = () => {
       isPlaying = false;
-      chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'paused' });
+      chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'paused' }).catch(() => {
+        // Ignore connection errors
+      });
     };
     
     audioElement.onended = () => {
       isPlaying = false;
-      chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'stopped' });
-      chrome.runtime.sendMessage({ type: 'streamComplete' });
+      chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'stopped' }).catch(() => {
+        // Ignore connection errors
+      });
+      chrome.runtime.sendMessage({ type: 'streamComplete' }).catch(() => {
+        // Ignore connection errors
+      });
     };
     
     // Add timeupdate event for seeking
@@ -115,6 +129,8 @@ function playAudioUrl(audioUrl) {
           currentTime: audioElement.currentTime,
           duration: audioElement.duration
         }
+      }).catch(() => {
+        // Ignore connection errors
       });
     };
     
@@ -124,6 +140,8 @@ function playAudioUrl(audioUrl) {
       chrome.runtime.sendMessage({ 
         type: 'streamError', 
         error: err.message 
+      }).catch(() => {
+        // Ignore connection errors
       });
     });
   } catch (error) {
@@ -131,6 +149,8 @@ function playAudioUrl(audioUrl) {
     chrome.runtime.sendMessage({ 
       type: 'streamError', 
       error: error.message 
+    }).catch(() => {
+      // Ignore connection errors
     });
   }
 }
@@ -192,7 +212,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (audioElement) {
         audioElement.pause();
         audioElement.currentTime = 0;
-        chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'stopped' });
+        chrome.runtime.sendMessage({ type: 'stateUpdate', state: 'stopped' }).catch(() => {
+          // Ignore connection errors
+        });
       }
       break;
       

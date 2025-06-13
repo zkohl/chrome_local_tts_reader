@@ -346,6 +346,16 @@ chrome.commands.onCommand.addListener(async (command) => {
     }).catch(error => {
       console.error('Error executing script for hotkey:', error);
     });
+  } else if (command === 'stop-audio') {
+    // Stop audio playback
+    chrome.runtime.sendMessage({ type: 'stop' });
+    currentPlayerState = 'stopped';
+    chrome.runtime.sendMessage({ 
+      type: 'playerStateUpdate', 
+      state: 'stopped' 
+    }).catch(() => {
+      // Ignore connection errors when popup is not open
+    });
   }
 });
 

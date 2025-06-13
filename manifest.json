@@ -31,6 +31,13 @@
         "mac": "Alt+Shift+R"
       },
       "description": "Read selected text or page aloud"
+    },
+    "stop-audio": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "Stop audio playback"
     }
   },
   "icons": {

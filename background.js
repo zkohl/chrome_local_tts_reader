@@ -225,18 +225,34 @@ async function startStreamingAudio(text, settings) {
   try {
     await setupOffscreenDocument();
     
+    // Validate request parameters
+    if (!text || text.trim().length === 0) {
+      throw new Error('No text provided for TTS');
+    }
+
+    if (!settings.voice || settings.voice.trim().length === 0) {
+      throw new Error('No voice specified for TTS');
+    }
+
+    const speed = parseFloat(settings.speed);
+    if (isNaN(speed) || speed <= 0 || speed > 4) {
+      throw new Error(`Invalid speed value: ${settings.speed}`);
+    }
+
+    const requestBody = {
+      model: 'tts-1',
+      voice: settings.voice.trim(),
+      input: text.trim(),
+      speed: speed
+    };
+    
     const response = await fetch(settings.serverUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'audio/mpeg, audio/wav, audio/*'
       },
-      body: JSON.stringify({
-        model: 'tts-1',
-        voice: settings.voice,
-        input: text,
-        speed: parseFloat(settings.speed)
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {

@@ -24,6 +24,15 @@
   "background": {
     "service_worker": "background.js"
   },
+  "commands": {
+    "read-aloud": {
+      "suggested_key": {
+        "default": "Alt+Shift+R",
+        "mac": "Alt+Shift+R"
+      },
+      "description": "Read selected text or page aloud"
+    }
+  },
   "icons": {
     "48": "icon48.png"
   }

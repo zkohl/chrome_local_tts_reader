@@ -256,6 +256,31 @@ async function startStreamingAudio(text, settings) {
   }
 }
 
+// Handle keyboard commands
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'read-aloud') {
+    const tabs = await chrome.tabs.query({active: true, currentWindow: true});
+    const [tab] = tabs;
+    
+    if (!tab) return;
+    
+    // Get selected text or page content, same logic as context menu
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: () => {
+        const selection = window.getSelection();
+        return selection.toString().trim() || document.body.innerText;
+      }
+    }).then(results => {
+      if (results && results[0] && results[0].result) {
+        processAndReadText(results[0].result, tab.id);
+      }
+    }).catch(error => {
+      console.error('Error executing script for hotkey:', error);
+    });
+  }
+});
+
 // Initialize context menu when extension is installed or updated
 chrome.runtime.onInstalled.addListener(() => {
   setupContextMenu();

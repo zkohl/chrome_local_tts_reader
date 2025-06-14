@@ -7,6 +7,7 @@ This repo was forked from https://github.com/phildougherty/local_tts_reader, and
 1. Added support for custom voice mixing (e.g. `af_heart(1)+af_aoede(1)`)
 1. Performance improvements for long text (implemented chunking of audio generation for concurrent playback and audio generation)
 1. Reliability improvements (e.g. starting new speech when already speaking)
+1. Implemented parsing from html instead of innertext, to retain document structure context for appropriate pauses after headers and reading lists.
 
 ### Suggested TTS setup:
 For local hosting, Kokoro via docker compose https://github.com/remsky/Kokoro-FastAPI. Ideally using NVIDIA GPU, but also can work on Mac with more initial latency in audio generation.
@@ -89,15 +90,96 @@ Default server URL: `http://localhost:8000/v1/audio/speech`
 
 ## Development
 
-The extension consists of three main files:
-- `manifest.json`: Extension configuration
-- `popup.html`: UI layout and styles
-- `popup.js`: Core functionality and event handlers
+### Architecture
+
+The extension consists of several key components:
+- `manifest.json`: Extension configuration and permissions
+- `popup.html`/`popup.js`: Main UI and user interactions
+- `background.js`: Service worker handling audio processing and chunking
+- `offscreen.js`: Audio playback in background context
+- `textProcessor.js`: Intelligent text processing for natural TTS
+- `audioPlayer.js`: Audio control abstraction layer
+
+### Testing
+
+This project uses [Jest](https://jestjs.io/) for comprehensive testing, particularly for the text processing functionality that converts markdown to speech-friendly text.
+
+#### Running Tests
+
+```bash
+# Install dependencies
+npm install
+
+# Run all tests
+npm test
+
+# Run tests in watch mode (reruns on file changes)
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+```
+
+#### Test Coverage
+
+**Current test coverage: 72 tests passing** across 3 test suites covering:
+
+- **HTML to Markdown Conversion**: Preserving document structure during extraction (23 tests)
+- **Text Processing**: Natural speech formatting and cleanup (45 tests)  
+- **Integration Testing**: End-to-end pipeline validation (4 tests)
+
+Test areas include:
+- **Header Processing**: Converting `# Header` → `Header:` for natural pauses
+- **List Processing**: Converting `- Item` → `Item,` for comma separation
+- **Structure Preservation**: HTML → Markdown → TTS-friendly text pipeline
+- **Comma Cleanup**: Proper punctuation between sections
+- **Edge Cases**: Null inputs, empty text, error handling
+- **Markdown Processing**: Bold, italic, links, code blocks
+- **Symbol Processing**: Converting `$`, `%`, `&` to words
+- **Real-World Examples**: GitHub, documentation, and README formats
+- **Performance**: Large text handling efficiency
+
+#### Text Processing Architecture
+
+The extension uses a two-stage processing pipeline for optimal TTS results:
+
+1. **HTML to Markdown Conversion** (`HtmlToMarkdown`): 
+   - Extracts content while preserving document structure
+   - Handles headings, lists, tables, and formatted text
+   - Filters out navigation, ads, and non-content elements
+   - Converts HTML lists to markdown format to retain meaning
+
+2. **Text Processing** (`TextProcessor`):
+   - **Headers**: `## Title` → `Title:` (adds natural pause indicator)
+   - **Lists**: `- Item 1\n- Item 2` → `Item 1, Item 2` (comma separation for flow)
+   - **Sections**: `## Features\n- Fast\n## Benefits` → `Features: Fast. Benefits:` (proper punctuation)
+
+#### Key Improvement: Structure Preservation
+
+**Before (using `innerText`):**
+```
+Features
+Fast processing
+Better accuracy
+Improved reliability
+```
+*Results in choppy, unnatural TTS speech*
+
+**After (using HTML → Markdown → Processing):**
+```
+Features: Fast processing, Better accuracy, Improved reliability
+```
+*Results in natural, flowing TTS speech with proper pauses*
+
+This creates significantly more natural speech compared to raw text extraction.
+
+### Making Changes
 
 To modify the extension:
 1. Make your changes
-2. Reload the extension in `chrome://extensions/`
-3. Click the refresh icon on the extension card
+2. Run tests: `npm test`
+3. Reload the extension in `chrome://extensions/`
+4. Click the refresh icon on the extension card
 
 ## Contributing
 

@@ -38,25 +38,25 @@ function setupContextMenu() {
 }
 
 // Handle context menu clicks
-chrome.contextMenus.onClicked.addListener((info, tab) => {
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === "readAloud") {
-    let text = info.selectionText || "";
-    
-    if (!text) {
-      // If no text is selected, get the page content
-      chrome.scripting.executeScript({
+    try {
+      // Always use the shared text extractor for consistency
+      await chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        function: () => {
-          return document.body.innerText;
-        }
-      }).then(results => {
-        if (results && results[0] && results[0].result) {
-          processAndReadText(results[0].result, tab.id);
-        }
+        files: ['textExtractor.js']
       });
-    } else {
-      // Use the selected text
-      processAndReadText(text, tab.id);
+      
+      const pageDataResult = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: () => window.extractPageText()
+      });
+      
+      if (pageDataResult && pageDataResult[0] && pageDataResult[0].result) {
+        processAndReadText(pageDataResult[0].result, tab.id);
+      }
+    } catch (error) {
+      console.error('Error executing script for context menu:', error);
     }
   }
 });
@@ -267,7 +267,8 @@ async function processNextChunk(expectedSessionId = null) {
 }
 
 // Process and read text with default settings
-async function processAndReadText(text, tabId) {
+async function processAndReadText(htmlAndTextResult, tabId) {
+  console.log(`processAndReadText: htmlAndTextResult=${JSON.stringify(htmlAndTextResult)}`)
   try {
     // Initialize chunker if needed
     initializeTextChunker();
@@ -315,9 +316,48 @@ async function processAndReadText(text, tabId) {
       ...savedSettings,
       voice: useCustomVoice ? savedSettings.customVoice.trim() : savedSettings.voice
     };
-    
+
     // Process text if enabled
+    let text = htmlAndTextResult.text
+    console.log(`processAndReadText: initial innerText=${JSON.stringify(text)}`)
+
+    const html = htmlAndTextResult.html
     if (settings.preprocessText && tabId) {
+      // Convert html text to markdown.
+      if (!!html) {
+        console.log(`Has html to convert to markdown: ${html}`)
+        // Convert html to markdown and use that as text to retain structure.
+        try {
+          const checkResult = await chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            func: () => typeof window.HtmlToMarkdown !== 'undefined'
+          });
+          if (!checkResult[0].result) {
+            // Inject the html to markdown script only if it doesn't exist
+            console.log(`Initializing htmlToMarkdown.js`)
+            await chrome.scripting.executeScript({
+              target: { tabId: tabId },
+              files: ['htmlToMarkdown.js']
+            });
+          }
+          const markdownResult = await chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            func: (htmlToProcess) => {
+              return window.HtmlToMarkdown.convert(htmlToProcess);
+            },
+            args: [html]
+          });
+          if (markdownResult && markdownResult[0] && markdownResult[0].result) {
+            text = markdownResult[0].result;
+            console.log(`✅ Got result from HtmlToMarkdown: ${text}`)
+          } else {
+            console.log(`❌ No result from HtmlToMarkdown`)
+          }
+        } catch(error) {
+          console.error('❌ Error from HtmlToMarkdown:', error);
+        }
+      }
+
       try {
         // Check if TextProcessor already exists, if not inject it
         const checkResult = await chrome.scripting.executeScript({
@@ -344,9 +384,12 @@ async function processAndReadText(text, tabId) {
         
         if (result && result[0] && result[0].result) {
           text = result[0].result;
+          console.log(`✅ Got result from TextProcessor: ${text}`)
+        } else {
+          console.log(`❌ No result from TextProcessor`)
         }
       } catch (error) {
-        console.error('Error processing text:', error);
+        console.error('❌ Error from TextProcessor:', error);
         // Fall back to using the original text
       }
     }
@@ -826,20 +869,26 @@ chrome.commands.onCommand.addListener(async (command) => {
     
     if (!tab) return;
     
-    // Get selected text or page content, same logic as context menu
-    chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      function: () => {
-        const selection = window.getSelection();
-        return selection.toString().trim() || document.body.innerText;
+    // Use the same text extraction logic as popup
+    try {
+      // Inject the shared text extractor
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['textExtractor.js']
+      });
+      
+      // Get page data using the shared extractor
+      const pageDataResult = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: () => window.extractPageText()
+      });
+      
+      if (pageDataResult && pageDataResult[0] && pageDataResult[0].result) {
+        processAndReadText(pageDataResult[0].result, tab.id);
       }
-    }).then(results => {
-      if (results && results[0] && results[0].result) {
-        processAndReadText(results[0].result, tab.id);
-      }
-    }).catch(error => {
+    } catch (error) {
       console.error('Error executing script for hotkey:', error);
-    });
+    };
   } else if (command === 'stop-audio') {
     // Stop audio playback using the chunked audio stop mechanism
     chrome.runtime.sendMessage({ type: 'stopAllAudio' });

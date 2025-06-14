@@ -5,6 +5,7 @@ This repo was forked from https://github.com/phildougherty/local_tts_reader, and
    - Stop playback: (Mac: Opt+Shift+S, Win: Alt+Shift+S)
 1. Changed theme to be dark, sleek, and modern
 1. Added support for custom voice mixing (e.g. `af_heart(1)+af_aoede(1)`)
+1. Performance improvements for long text (implemented chunking of audio generation for concurrent playback and audio generation)
 1. Reliability improvements (e.g. starting new speech when already speaking)
 
 ### Suggested TTS setup:

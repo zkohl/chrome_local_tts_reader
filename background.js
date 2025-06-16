@@ -258,10 +258,33 @@ async function processNextChunk(expectedSessionId = null) {
       return;
     }
     
-    // Continue with next chunk on error
+    // For non-recoverable errors, clean up the session
+    if (error.message && (
+      error.message.includes('No text provided') ||
+      error.message.includes('No voice specified') ||
+      error.message.includes('Invalid speed value')
+    )) {
+      console.log(`🛑 Non-recoverable error - cleaning up chunk session ${sessionId}`);
+      currentChunkSession = null;
+      
+      // Update state to stopped
+      currentPlayerState = 'stopped';
+      chrome.runtime.sendMessage({
+        type: 'playerStateUpdate',
+        state: 'stopped'
+      }).catch(() => {});
+      
+      return;
+    }
+    
+    // Continue with next chunk on recoverable errors
     currentChunkSession.currentIndex++;
     if (currentChunkSession.currentIndex < currentChunkSession.chunks.length) {
       setTimeout(() => processNextChunk(sessionId), 500);
+    } else {
+      // No more chunks to process, clean up
+      console.log(`🛑 No more chunks to process after error - cleaning up session ${sessionId}`);
+      currentChunkSession = null;
     }
   }
 }
@@ -288,6 +311,16 @@ async function processAndReadText(htmlAndTextResult, tabId) {
       currentChunkSession = null;
       // Give a brief moment for the stop to process
       await new Promise(resolve => setTimeout(resolve, 100));
+    } else if (currentChunkSession) {
+      // Clean up any stale chunk session even if not actively playing
+      console.log(`🛑 Cleaning up stale chunk session ${currentChunkSession.id}`);
+      currentChunkSession = null;
+      
+      // Also clean up any stale abort controller
+      if (activeAbortController) {
+        activeAbortController.abort();
+        activeAbortController = null;
+      }
     }
     // Get default settings (same as popup.js)
     const savedSettings = await chrome.storage.local.get({
@@ -400,6 +433,12 @@ async function processAndReadText(htmlAndTextResult, tabId) {
       const chunks = textChunker.chunkText(text);
       
       if (chunks.length === 0) {
+        // Clean up any stale state before throwing error
+        currentChunkSession = null;
+        if (activeAbortController) {
+          activeAbortController.abort();
+          activeAbortController = null;
+        }
         throw new Error('No text to process after chunking');
       }
       
@@ -456,6 +495,19 @@ async function processAndReadText(htmlAndTextResult, tabId) {
     
     // Reset state to stopped on any error
     currentPlayerState = 'stopped';
+    
+    // Clean up chunk session
+    if (currentChunkSession) {
+      console.log(`🛑 Cleaning up chunk session ${currentChunkSession.id} due to error`);
+      currentChunkSession = null;
+    }
+    
+    // Abort any active fetch requests
+    if (activeAbortController) {
+      console.log(`🛑 Aborting active TTS request due to error`);
+      activeAbortController.abort();
+      activeAbortController = null;
+    }
     
     chrome.runtime.sendMessage({ 
       type: 'playerStateUpdate', 
@@ -857,6 +909,12 @@ async function startStreamingAudioChunk(text, settings, chunkIndex, sessionId) {
       }).catch(() => {
         // Ignore connection errors when popup is not open
       });
+      
+      // Clean up the chunk session on non-abort errors
+      if (error.name !== 'AbortError') {
+        console.log(`🛑 Cleaning up chunk session ${currentChunkSession.id} due to streaming error`);
+        currentChunkSession = null;
+      }
     }
   }
 }
